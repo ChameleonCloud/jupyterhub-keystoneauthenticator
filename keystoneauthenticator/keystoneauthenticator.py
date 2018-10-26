@@ -1,5 +1,6 @@
 from jupyterhub.auth import Authenticator
 from keystoneauth1 import session
+from keystoneauth1.exceptions.http import Unauthorized
 from keystoneauth1.identity import v3
 from tornado import gen
 from traitlets import Unicode
@@ -25,13 +26,15 @@ class KeystoneAuthenticator(Authenticator):
                            unscoped=True)
         sess = session.Session(auth=auth)
 
-        if not sess.get_user_id():
+        try:
+            token = sess.get_auth_headers()['X-Auth-Token']
+        except Unauthorized:
             return None
 
         userdict = {'name': username}
         userdict['auth_state'] = auth_state = {}
         auth_state['auth_url'] = self.auth_url
-        auth_state['os_token'] = sess.get_auth_headers()['X-Auth-Token']
+        auth_state['os_token'] = token
 
         return userdict
 
