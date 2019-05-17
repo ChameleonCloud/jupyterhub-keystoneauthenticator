@@ -4,12 +4,12 @@ from keystoneauth1.identity import v3
 from traceback import format_exc
 
 class Client():
-    def __init__(auth_url, username=None, password=None, token=None):
+    def __init__(self, auth_url, username=None, password=None, token=None):
         self.auth_url = auth_url
 
         if token is not None:
             auth = v3.Token(auth_url=self.auth_url, token=token)
-        else if (username is not None and password is not None):
+        elif (username is not None and password is not None):
             auth = v3.Password(auth_url=self.auth_url,
                                     username=username,
                                     password=password,
