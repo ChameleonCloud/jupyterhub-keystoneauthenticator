@@ -17,8 +17,7 @@ class KeystoneAuthenticator(Authenticator):
         username = data['username']
         password = data['password']
 
-        client = Client(self.auth_url, username=username,
-                        password=password)
+        client = self._create_client(username=username, password=password)
         token = client.get_token()
         projects = client.get_projects()
 
@@ -59,9 +58,12 @@ class KeystoneAuthenticator(Authenticator):
             return True
 
         token = auth_state['os_token']
-        client = Client(self.auth_url, token=token)
+        client = self._create_client(token=token)
 
         # If we can generate a new token, it means ours is still valid.
         # There is no value in storing the new token, as its expiration will
         # be tied to the requesting token's expiration.
         return client.get_token() is not None
+
+    def _create_client(self, **kwargs):
+        return Client(self.auth_url, log=self.log, **kwargs)

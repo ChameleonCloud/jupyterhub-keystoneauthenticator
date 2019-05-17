@@ -40,11 +40,12 @@ class Client():
 
     def get_projects(self):
         try:
-            project_response = sess.get('{}/auth/projects'.format(self.auth_url))
+            project_response = (
+                self.session.get('{}/auth/projects'.format(self.auth_url)))
             projects = project_response.json()['projects']
             projects = [p for p in projects if p['enabled'] and p['name'] != 'openstack']
         except Exception as exc:
-            self.log.error('Failed to get project list for user {}'.format(username))
+            self.log.error('Failed to get project list')
             self.log.debug(format_exc())
             projects = []
 
