@@ -1,11 +1,20 @@
+import logging
+
 from keystoneauth1 import session
 from keystoneauth1.exceptions.http import Unauthorized
 from keystoneauth1.identity import v3
 from traceback import format_exc
 
 class Client():
-    def __init__(self, auth_url, username=None, password=None, token=None):
+    def __init__(self, auth_url, username=None, password=None,
+                 token=None, log=None):
         self.auth_url = auth_url
+
+        if log is not None:
+            self.log = log
+        else:
+            self.log = logging.getLogger(__name__)
+
 
         if token is not None:
             auth = v3.Token(auth_url=self.auth_url, token=token)
