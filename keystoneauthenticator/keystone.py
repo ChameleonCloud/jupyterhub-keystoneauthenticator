@@ -1,6 +1,7 @@
 from keystoneauth1 import session
 from keystoneauth1.exceptions.http import Unauthorized
 from keystoneauth1.identity import v3
+from traceback import format_exc
 
 class Client():
     def __init__(auth_url, username=None, password=None, token=None):

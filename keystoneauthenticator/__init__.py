@@ -1,6 +1,5 @@
 from jupyterhub.auth import Authenticator
 from tornado import gen
-from traceback import format_exc
 from traitlets import Unicode
 
 from .keystone import Client
