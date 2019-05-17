@@ -1,10 +1,9 @@
 from jupyterhub.auth import Authenticator
-from keystoneauth1 import session
-from keystoneauth1.exceptions.http import Unauthorized
-from keystoneauth1.identity import v3
 from tornado import gen
 from traceback import format_exc
 from traitlets import Unicode
+
+from .keystone import Client
 
 class KeystoneAuthenticator(Authenticator):
     auth_url = Unicode(
@@ -19,26 +18,10 @@ class KeystoneAuthenticator(Authenticator):
         username = data['username']
         password = data['password']
 
-        auth = v3.Password(auth_url=self.auth_url,
-                           username=username,
-                           password=password,
-                           user_domain_name='default',
-                           unscoped=True)
-        sess = session.Session(auth=auth)
-
-        try:
-            token = sess.get_auth_headers()['X-Auth-Token']
-        except Unauthorized:
-            return None
-
-        try:
-            project_response = sess.get('{}/auth/projects'.format(self.auth_url))
-            projects = project_response.json()['projects']
-            projects = [p for p in projects if p['enabled'] and p['name'] != 'openstack']
-        except Exception as exc:
-            self.log.error('Failed to get project list for user {}'.format(username))
-            self.log.debug(format_exc())
-            projects = []
+        client = Client(self.auth_url, username=username,
+                        password=password)
+        token = client.get_token()
+        projects = client.get_projects()
 
         userdict = {'name': username}
         userdict['auth_state'] = auth_state = {}
@@ -48,7 +31,9 @@ class KeystoneAuthenticator(Authenticator):
         if projects:
             auth_state['project_name'] = projects[0]['name']
         else:
-            self.log.warn('Could not select default project for user {}'.format(username))
+            self.log.warn(
+                ('Could not select default project for user %r, '
+                 'no projects found'), username)
 
         return userdict
 
@@ -66,3 +51,18 @@ class KeystoneAuthenticator(Authenticator):
         project_name = auth_state.get('project_name')
         if project_name:
             spawner.environment['OS_PROJECT_NAME'] = project_name
+
+    @gen.coroutine
+    def refresh_user(self, user, handler=None):
+        auth_state = yield user.get_auth_state()
+        if not auth_state:
+            # auth_state not enabled
+            return True
+
+        token = auth_state['os_token']
+        client = Client(self.auth_url, token=token)
+
+        # If we can generate a new token, it means ours is still valid.
+        # There is no value in storing the new token, as its expiration will
+        # be tied to the requesting token's expiration.
+        return client.get_token() is not None
