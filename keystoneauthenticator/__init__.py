@@ -19,12 +19,16 @@ class KeystoneAuthenticator(Authenticator):
 
         client = self._create_client(username=username, password=password)
         token = client.get_token()
-        projects = client.get_projects()
+
+        if token is None:
+            return None
 
         userdict = {'name': username}
         userdict['auth_state'] = auth_state = {}
         auth_state['auth_url'] = self.auth_url
         auth_state['os_token'] = token
+
+        projects = client.get_projects()
 
         if projects:
             auth_state['project_name'] = projects[0]['name']
