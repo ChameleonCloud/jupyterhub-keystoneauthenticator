@@ -12,6 +12,21 @@ class KeystoneAuthenticator(Authenticator):
         """
     )
 
+    api_version = Unicode(
+        '3',
+        config=True,
+        help="""
+        Keystone authentication version
+        """
+    )
+
+    region_name = Unicode(
+        config=True,
+        help="""
+        Keystone authentication region name
+        """
+    )
+
     @gen.coroutine
     def authenticate(self, handler, data):
         username = data['username']
@@ -23,36 +38,35 @@ class KeystoneAuthenticator(Authenticator):
         if token is None:
             return None
 
-        userdict = {'name': username}
-        userdict['auth_state'] = auth_state = {}
-        auth_state['auth_url'] = self.auth_url
-        auth_state['os_token'] = token
+        auth_state = {}
+        openstack_rc = {
+            'OS_AUTH_URL': self.auth_url,
+            'OS_INTERFACE': 'public',
+            'OS_IDENTITY_API_VERSION': self.api_version,
+            'OS_AUTH_TYPE': 'token',
+            'OS_TOKEN': token,
+            'OS_REGION_NAME': self.region_name,
+        }
+
+        if self.region_name:
+            openstack_rc['OS_REGION_NAME'] = self.region_name
 
         projects = client.get_projects()
 
         if projects:
-            auth_state['project_name'] = projects[0]['name']
+            openstack_rc['OS_PROJECT_NAME'] = projects[0]['name']
+            openstack_rc['OS_PROJECT_DOMAIN_ID'] = projects[0]['domain_id']
         else:
             self.log.warn(
                 ('Could not select default project for user %r, '
                  'no projects found'), username)
 
-        return userdict
+        auth_state['openstack_rc'] = openstack_rc
 
-    @gen.coroutine
-    def pre_spawn_start(self, user, spawner):
-        auth_state = yield user.get_auth_state()
-        if not auth_state:
-            # auth_state not enabled
-            return
-        spawner.environment['OS_AUTH_URL'] = auth_state['auth_url']
-        spawner.environment['OS_TOKEN'] = auth_state['os_token']
-        spawner.environment['OS_AUTH_TYPE'] = 'token'
-        spawner.environment['OS_IDENTITY_API_VERSION'] = '3'
-
-        project_name = auth_state.get('project_name')
-        if project_name:
-            spawner.environment['OS_PROJECT_NAME'] = project_name
+        return dict(
+            name=username,
+            auth_state=auth_state,
+        )
 
     @gen.coroutine
     def refresh_user(self, user, handler=None):
