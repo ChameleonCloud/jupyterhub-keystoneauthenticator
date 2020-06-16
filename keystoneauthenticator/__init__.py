@@ -82,5 +82,19 @@ class KeystoneAuthenticator(Authenticator):
         # be tied to the requesting token's expiration.
         return client.get_token() is not None
 
+    @gen.coroutine
+    def pre_spawn_start(self, user, spawner):
+        """Fill in OpenRC environment variables from user auth state.
+        """
+        auth_state = yield user.get_auth_state()
+        if not auth_state:
+            # auth_state not enabled
+            self.log.error((
+                'auth_state is not enabled! Cannot set OpenStack RC '
+                'parameters'))
+            return
+        for rc_key, rc_value in auth_state.get('openstack_rc', {}).items():
+            spawner.environment[rc_key] = rc_value
+
     def _create_client(self, **kwargs):
         return Client(self.auth_url, log=self.log, **kwargs)
