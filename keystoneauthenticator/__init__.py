@@ -45,7 +45,6 @@ class KeystoneAuthenticator(Authenticator):
             'OS_IDENTITY_API_VERSION': self.api_version,
             'OS_AUTH_TYPE': 'token',
             'OS_TOKEN': token,
-            'OS_REGION_NAME': self.region_name,
         }
 
         if self.region_name:

@@ -20,10 +20,10 @@ class Client():
             auth = v3.Token(auth_url=self.auth_url, token=token)
         elif (username is not None and password is not None):
             auth = v3.Password(auth_url=self.auth_url,
-                                    username=username,
-                                    password=password,
-                                    user_domain_name='default',
-                                    unscoped=True)
+                                username=username,
+                                password=password,
+                                user_domain_name='default',
+                                unscoped=True)
         else:
             raise ValueError(
                 'Must provide either auth_state or username/password')
@@ -44,7 +44,7 @@ class Client():
                 self.session.get('{}/auth/projects'.format(self.auth_url)))
             projects = project_response.json()['projects']
             projects = [p for p in projects if p['enabled'] and p['name'] != 'openstack']
-        except Exception as exc:
+        except Exception:
             self.log.error('Failed to get project list')
             self.log.debug(format_exc())
             projects = []
