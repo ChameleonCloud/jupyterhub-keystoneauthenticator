@@ -17,4 +17,9 @@ setup(
         'tornado',
         'traitlets',
     ],
+    entry_points={
+        'jupyterhub.authenticators': [
+            'keystone = keystoneauthenticator:KeystoneAuthenticator',
+        ],
+    },
 )
