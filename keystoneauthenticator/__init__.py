@@ -53,6 +53,7 @@ class KeystoneAuthenticator(Authenticator):
         projects = client.get_projects()
 
         if projects:
+            openstack_rc['OS_PROJECT_ID'] = projects[0]['id']
             openstack_rc['OS_PROJECT_NAME'] = projects[0]['name']
             openstack_rc['OS_PROJECT_DOMAIN_ID'] = projects[0]['domain_id']
         else:
