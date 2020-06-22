@@ -50,3 +50,18 @@ class Client():
             projects = []
 
         return projects
+
+    def get_domain_name(self, domain_id):
+        try:
+            domain_response = (
+                self.session.get(
+                    '{}/domains/{}'.format(self.auth_url, domain_id)))
+            domain = domain_response.json()['domain']
+            domain_name = domain['name']
+        except Exception:
+            self.log.error(
+                'Failed to lookup domain with id={}'.format(domain_id))
+            self.log.debug(format_exc())
+            domain_name = None
+
+        return domain_name
