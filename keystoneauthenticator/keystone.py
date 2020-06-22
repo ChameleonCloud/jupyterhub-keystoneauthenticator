@@ -7,7 +7,7 @@ from traceback import format_exc
 
 class Client():
     def __init__(self, auth_url, username=None, password=None,
-                 token=None, log=None):
+                 token=None, user_domain_id='default', log=None):
         self.auth_url = auth_url
 
         if log is not None:
@@ -15,15 +15,14 @@ class Client():
         else:
             self.log = logging.getLogger(__name__)
 
-
         if token is not None:
-            auth = v3.Token(auth_url=self.auth_url, token=token)
+            auth = v3.Token(auth_url=self.auth_url, token=token, unscoped=True)
         elif (username is not None and password is not None):
             auth = v3.Password(auth_url=self.auth_url,
-                                username=username,
-                                password=password,
-                                user_domain_name='default',
-                                unscoped=True)
+                               username=username,
+                               password=password,
+                               user_domain_id=user_domain_id,
+                               unscoped=True)
         else:
             raise ValueError(
                 'Must provide either auth_state or username/password')
@@ -51,17 +50,23 @@ class Client():
 
         return projects
 
-    def get_domain_name(self, domain_id):
+    def get_project_domain(self, project):
         try:
+            # Need to make scoped request in order to get the domain associated
+            # with the requested project
+            domain_auth = v3.Token(auth_url=self.auth_url,
+                                   token=self.get_token(),
+                                   project_id=project['id'])
+            domain_session = session.Session(auth=domain_auth)
             domain_response = (
-                self.session.get(
-                    '{}/domains/{}'.format(self.auth_url, domain_id)))
+                domain_session.get(
+                    '{}/domains/{}'.format(self.auth_url,
+                                           project['domain_id'])))
             domain = domain_response.json()['domain']
-            domain_name = domain['name']
         except Exception:
             self.log.error(
-                'Failed to lookup domain with id={}'.format(domain_id))
+                'Failed to lookup domain for project={}'.format(project['id']))
             self.log.debug(format_exc())
-            domain_name = None
+            domain = None
 
-        return domain_name
+        return domain

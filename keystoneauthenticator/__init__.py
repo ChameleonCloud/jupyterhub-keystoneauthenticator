@@ -53,12 +53,12 @@ class KeystoneAuthenticator(Authenticator):
         projects = client.get_projects()
 
         if projects:
-            openstack_rc['OS_PROJECT_NAME'] = projects[0]['name']
-            domain_id = projects[0]['domain_id']
-            openstack_rc['OS_PROJECT_DOMAIN_ID'] = domain_id
-            domain_name = client.get_domain_name(domain_id)
-            if domain_name:
-                openstack_rc['OS_PROJECT_DOMAIN_NAME'] = domain_name
+            default_project = projects[0]
+            openstack_rc['OS_PROJECT_NAME'] = default_project['name']
+            openstack_rc['OS_PROJECT_DOMAIN_ID'] = default_project['domain_id']
+            domain = client.get_project_domain(default_project)
+            if domain:
+                openstack_rc['OS_PROJECT_DOMAIN_NAME'] = domain['name']
         else:
             self.log.warn(
                 ('Could not select default project for user %r, '
