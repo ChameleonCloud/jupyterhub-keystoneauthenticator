@@ -78,13 +78,25 @@ class KeystoneAuthenticator(Authenticator):
             # auth_state not enabled
             return True
 
-        token = auth_state['os_token']
-        client = self._create_client(token=token)
+        try:
+            openstack_rc = auth_state.get('openstack_rc', {})
+            token = openstack_rc.get('OS_TOKEN')
 
-        # If we can generate a new token, it means ours is still valid.
-        # There is no value in storing the new token, as its expiration will
-        # be tied to the requesting token's expiration.
-        return client.get_token() is not None
+            if not token:
+                self.log.warning((
+                    'Could not get OpenStack token from auth_state'))
+                return True
+
+            client = self._create_client(token=token)
+
+            # If we can generate a new token, it means ours is still valid.
+            # There is no value in storing the new token, as its expiration will
+            # be tied to the requesting token's expiration.
+            return client.get_token() is not None
+        except Exception as err:
+            self.log.warning((
+                f'Failed to refresh OpenStack token in pre_spawn: {err}'))
+            return True
 
     @gen.coroutine
     def pre_spawn_start(self, user, spawner):
